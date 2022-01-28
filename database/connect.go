@@ -35,6 +35,8 @@ func DeleteTables(db *sql.DB) error {
 	_, err = db.Exec(q5)
 	return err
 }
+
+// RowId MAKE SURE ROWS HAS NOT COPIES
 func RowId(db *sql.DB, selectQuery, insertQuery string, args ...interface{}) int64 {
 	row := db.QueryRow(selectQuery, args...)
 	var id int64

@@ -27,8 +27,7 @@ func (p *WorkerPool) Run(wg *sync.WaitGroup, handler func(author Restaurant)) {
 		case restaurant = <-p.Sender:
 			handler(restaurant)
 		case <-p.Ender:
-			//fmt.Println(<- p.Sender)
-			log.Println("I am finish")
+			log.Println("Routine complete")
 			return
 		}
 	}
