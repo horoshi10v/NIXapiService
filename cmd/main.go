@@ -49,7 +49,7 @@ func main() {
 				}
 			}
 			for _, prod := range rest.Menu {
-				prodId := database.RowId(
+				_ = database.RowId(
 					conn,
 					"SELECT id FROM product WHERE name = ?",
 					"INSERT INTO product VALUE (?, ?, ?, ?, ?)",
@@ -70,13 +70,6 @@ func main() {
 					if err != nil {
 						log.Println(err)
 					}
-				}
-
-				_, err = conn.Exec(
-					"INSERT INTO menu_products VALUE (?, ?, ?)",
-					rest.Id, prodId, prod.Price)
-				if err != nil {
-					log.Println(err)
 				}
 			}
 		})
