@@ -1,33 +1,33 @@
 package pkg
 
 import (
-	"log"
+	"NIXSwag/api/internal/models"
 	"sync"
 )
 
 type WorkerPool struct {
 	Count  int
-	Sender chan Restaurant
+	Sender chan models.Restaurant
 	Ender  chan bool
 }
 
 func NewWorkerPool(count int) *WorkerPool {
 	return &WorkerPool{
 		Count:  count,
-		Sender: make(chan Restaurant, count*2),
+		Sender: make(chan models.Restaurant, count*2),
 		Ender:  make(chan bool),
 	}
 }
 
-func (p *WorkerPool) Run(wg *sync.WaitGroup, handler func(author Restaurant)) {
+func (p *WorkerPool) Run(wg *sync.WaitGroup, handler func(author models.Restaurant)) {
 	defer wg.Done()
-	var restaurant Restaurant
+	var restaurant models.Restaurant
 	for {
 		select {
 		case restaurant = <-p.Sender:
 			handler(restaurant)
 		case <-p.Ender:
-			log.Println("Routine complete")
+			//myLog.InfoFile("Routine complete")
 			return
 		}
 	}

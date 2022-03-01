@@ -1,4 +1,4 @@
-package pkg
+package models
 
 type Restaurant struct {
 	Id           int    `json:"id"`

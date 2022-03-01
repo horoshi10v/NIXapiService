@@ -1,8 +1,9 @@
-package main
+package parser
 
 import (
-	"NIXSwag/database"
-	"NIXSwag/pkg"
+	"NIXSwag/api/internal/database"
+	"NIXSwag/api/internal/models"
+	pkg2 "NIXSwag/api/pkg"
 	"context"
 	"database/sql"
 	"encoding/json"
@@ -16,25 +17,14 @@ import (
 	"time"
 )
 
-func main() {
-	pool := pkg.NewWorkerPool(4)
+func Parser(conn *sql.DB, err error) error {
+	pool := pkg2.NewWorkerPool(4)
 	wg := sync.WaitGroup{}
-	conn, err := database.Connect()
-	if err != nil {
-		log.Fatal(err)
-	}
-	//database.DeleteTables(conn)
-	defer func(conn *sql.DB) {
-		err := conn.Close()
-		if err != nil {
-			log.Fatal(err)
-		}
-	}(conn)
 	wg.Add(pool.Count)
 	//FILL DATABASE
 	for i := 0; i < pool.Count; i++ {
-		log.Println("Starting Routine...")
-		go pool.Run(&wg, func(rest pkg.Restaurant) {
+		//log.Println("Starting Routine...")
+		go pool.Run(&wg, func(rest models.Restaurant) {
 			_, err = conn.Exec(
 				"INSERT INTO restaurant VALUE (?, ?, ?, ?, ?, ?)",
 				rest.Id, rest.Name,
@@ -70,13 +60,14 @@ func main() {
 					if err != nil {
 						log.Println(err)
 					}
+
 				}
 			}
 		})
 	}
-	//MAKE SERVER AND PARSE JSON
+	//PARSE JSON
 	client := http.DefaultClient
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 	req, err := http.NewRequestWithContext(
 		ctx, http.MethodGet,
@@ -90,7 +81,7 @@ func main() {
 		log.Fatalf("%v", err)
 	}
 
-	suppliersMap := make(map[string][]pkg.Restaurant, 0)
+	suppliersMap := make(map[string][]models.Restaurant, 0)
 	err = json.NewDecoder(res.Body).Decode(&suppliersMap)
 	if err != nil {
 		log.Fatalln(err)
@@ -99,11 +90,11 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	suppliers := make([]pkg.Restaurant, 0)
+	suppliers := make([]models.Restaurant, 0)
 	suppliers = suppliersMap["suppliers"]
 
 	for i := range suppliers {
-		ctx, cancel = context.WithTimeout(context.Background(), time.Second)
+		ctx, cancel = context.WithTimeout(context.Background(), time.Minute)
 		req, err = http.NewRequestWithContext(
 			ctx, http.MethodGet,
 			"http://foodapi.true-tech.php.nixdev.co/suppliers/"+strconv.Itoa(suppliers[i].Id)+"/menu",
@@ -117,10 +108,10 @@ func main() {
 			log.Fatalf("%v", err)
 		}
 
-		menuMap := make(map[string][]pkg.Product, 0)
+		menuMap := make(map[string][]models.Product, 0)
 		err := json.NewDecoder(res.Body).Decode(&menuMap)
 		if err != nil {
-			return
+			return nil
 		}
 		suppliers[i].Menu = menuMap["menu"]
 		pool.Sender <- suppliers[i]
@@ -137,7 +128,7 @@ func main() {
 		time.Sleep(time.Minute)
 		for i, sup := range suppliers {
 			for j, prod := range sup.Menu {
-				ctx, cancel = context.WithTimeout(context.Background(), time.Second)
+				ctx, cancel = context.WithTimeout(context.Background(), time.Minute)
 				req, err = http.NewRequestWithContext(ctx, http.MethodGet,
 					"http://foodapi.true-tech.php.nixdev.co/suppliers/"+
 						strconv.Itoa(sup.Id)+"/menu/"+strconv.Itoa(prod.Id),
@@ -146,7 +137,7 @@ func main() {
 				if err != nil {
 					log.Println("Update error: " + err.Error())
 				}
-				var p pkg.Product
+				var p models.Product
 				err = json.NewDecoder(res.Body).Decode(&p)
 				if err != nil {
 					log.Println("Update error: " + err.Error())
@@ -171,4 +162,5 @@ func main() {
 			}
 		}
 	}
+	return err
 }
