@@ -8,18 +8,6 @@ import (
 	"strconv"
 )
 
-//type Config struct {
-//	Port       string `toml:"port"`
-//	LoggerPath string `toml:"logger_path"`
-//}
-//
-//func NewConfig() *Config {
-//	return &Config{
-//		Port:       ":8080",
-//		LoggerPath: "./logs/server.log",
-//	}
-//}
-
 type Configer struct {
 	Port                   string
 	AccessSecret           string

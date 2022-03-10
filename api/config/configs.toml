@@ -1,2 +1,0 @@
-port = ":8080"
-logger_path = "./logs/deb.log"

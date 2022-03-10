@@ -124,42 +124,40 @@ func Parser(conn *sql.DB, err error) error {
 	pool.Stop()
 	wg.Wait()
 	//UPDATE PRICES
-	for {
-		time.Sleep(time.Minute)
-		for i, sup := range suppliers {
-			for j, prod := range sup.Menu {
-				ctx, cancel = context.WithTimeout(context.Background(), time.Minute)
-				req, err = http.NewRequestWithContext(ctx, http.MethodGet,
-					"http://foodapi.true-tech.php.nixdev.co/suppliers/"+
-						strconv.Itoa(sup.Id)+"/menu/"+strconv.Itoa(prod.Id),
-					nil)
-				res, err = client.Do(req)
-				if err != nil {
-					log.Println("Update error: " + err.Error())
-				}
-				var p models.Product
-				err = json.NewDecoder(res.Body).Decode(&p)
-				if err != nil {
-					log.Println("Update error: " + err.Error())
-				}
-				if p.Price != prod.Price {
-					_, err = conn.Exec(
-						"UPDATE product SET price = ? WHERE id = ?",
-						p.Price, p.Id)
-					if err != nil {
-						log.Println(err)
-					}
-					fmt.Println(p.Name, "price edited", prod.Price, "->", p.Price)
-					suppliers[i].Menu[j].Price = p.Price
-				} else {
-					fmt.Println(p.Name, "not edit with price", p.Price)
-				}
-				err := res.Body.Close()
-				if err != nil {
-					log.Fatalln(err)
-				}
-				cancel()
+	//time.Sleep(time.Minute)
+	for i, sup := range suppliers {
+		for j, prod := range sup.Menu {
+			ctx, cancel = context.WithTimeout(context.Background(), time.Minute)
+			req, err = http.NewRequestWithContext(ctx, http.MethodGet,
+				"http://foodapi.true-tech.php.nixdev.co/suppliers/"+
+					strconv.Itoa(sup.Id)+"/menu/"+strconv.Itoa(prod.Id),
+				nil)
+			res, err = client.Do(req)
+			if err != nil {
+				log.Println("Update error: " + err.Error())
 			}
+			var p models.Product
+			err = json.NewDecoder(res.Body).Decode(&p)
+			if err != nil {
+				log.Println("Update error: " + err.Error())
+			}
+			if p.Price != prod.Price {
+				_, err = conn.Exec(
+					"UPDATE product SET price = ? WHERE id = ?",
+					p.Price, p.Id)
+				if err != nil {
+					log.Println(err)
+				}
+				fmt.Println(p.Name, "price edited", prod.Price, "->", p.Price)
+				suppliers[i].Menu[j].Price = p.Price
+			} else {
+				fmt.Println(p.Name, "not edit with price", p.Price)
+			}
+			err := res.Body.Close()
+			if err != nil {
+				log.Fatalln(err)
+			}
+			cancel()
 		}
 	}
 	return err
